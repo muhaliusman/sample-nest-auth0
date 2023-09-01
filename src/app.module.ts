@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Auth0Module } from './auth0/auth0.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { UserModule } from './user/user.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import auth0Config from './config/auth0.config';
+import typeormConfig from './config/typeorm.config';
 import appConfig from './config/app.config';
 
 @Module({
@@ -11,8 +14,13 @@ import appConfig from './config/app.config';
     Auth0Module,
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [auth0Config, appConfig],
-    })
+      load: [auth0Config, typeormConfig, appConfig],
+    }),
+    UserModule,
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (config: ConfigService) => config.get('typeorm'),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
