@@ -12,6 +12,11 @@ export class CreateUsersTable1693408619685 implements MigrationInterface {
             isPrimary: true,
           },
           {
+            name: 'auth0_id',
+            type: 'varchar',
+            isUnique: true,
+          },
+          {
             name: 'name',
             type: 'varchar',
           },
@@ -53,6 +58,8 @@ export class CreateUsersTable1693408619685 implements MigrationInterface {
         ],
       }),
     );
+
+    await queryRunner.query('CREATE INDEX IDX_AUTH0_ID ON users (auth0_id)');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

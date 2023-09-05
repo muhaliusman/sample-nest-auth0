@@ -1,9 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-@Entity()
+@Entity({ name: 'users' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column()
+  auth0_id: string;
 
   @Column()
   name: string;
@@ -11,27 +20,21 @@ export class User {
   @Column()
   email: string;
 
-  @Column()
+  @Column('varchar', { nullable: true, default: null })
   avatar: string;
 
-  @Column()
+  @Column('datetime', { nullable: true, default: null })
   last_login_at: Date;
 
   @Column()
   email_verified: boolean;
 
-  @Column()
+  @Column('datetime', { nullable: true, default: null })
   last_session_active_at: Date;
 
-  @Column()
+  @CreateDateColumn()
   created_at: Date;
 
-  @Column()
+  @UpdateDateColumn()
   updated_at: Date;
-
-  constructor(name: string, email: string, avatar: string) {
-    this.name = name;
-    this.email = email;
-    this.avatar = avatar;
-  }
 }

@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 dotenv.config();
 
 @Injectable()
-export class JwtService extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(configService: ConfigService) {
     const issuer = configService.get<string>('auth0.issuer');
     const audience = configService.get<string>('auth0.audience');
