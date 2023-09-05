@@ -12,18 +12,43 @@ import { AuthGuard } from '@nestjs/passport';
 import { UserService } from 'src/user/user.service';
 import { CreateAuth0UserDto, UpdateLastLoginDto } from './auth0-user.dto';
 import { ResponseHelper } from 'src/helpers/response.helper';
+import {
+  ApiBearerAuth,
+  ApiHeaders,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { User } from 'src/user/user.entity';
 
 @Controller('auth0')
+@ApiTags('auth0')
+@ApiBearerAuth('JWT-auth0')
+@ApiHeaders([
+  {
+    name: 'Authorization',
+    description: 'Bearer token',
+  },
+  {
+    name: 'Content-Type',
+    description: 'application/json',
+  },
+])
 export class Auth0Controller {
   constructor(private readonly userService: UserService) {}
 
   @Post('register')
+  @ApiResponse({
+    status: 200,
+    description: 'User last login updated',
+    type: User,
+  })
   @UseGuards(AuthGuard('jwt'))
   @UsePipes(new ValidationPipe())
   async register(@Body() requests: CreateAuth0UserDto) {
     try {
       const user = await this.userService.createOrUpdateUserFromAuth0(requests);
-      return ResponseHelper.generateSuccessResponse(user);
+
+      return user;
     } catch (error) {
       ResponseHelper.throwHttpException(
         error,
@@ -32,7 +57,12 @@ export class Auth0Controller {
     }
   }
 
-  @Put('update-last-login')
+  @Put('last-login')
+  @ApiResponse({
+    status: 200,
+    description: 'User last login updated',
+    type: User,
+  })
   @UseGuards(AuthGuard('jwt'))
   @UsePipes(new ValidationPipe())
   async updateLastLogin(@Body() requests: UpdateLastLoginDto) {
@@ -42,7 +72,7 @@ export class Auth0Controller {
         new Date(),
       );
 
-      return ResponseHelper.generateSuccessResponse(user);
+      return user;
     } catch (error) {
       ResponseHelper.throwHttpException(
         error,

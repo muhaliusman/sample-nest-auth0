@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { Auth0Module } from './auth0/auth0.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -22,7 +21,6 @@ import appConfig from './config/app.config';
       useFactory: async (config: ConfigService) => config.get('typeorm'),
     }),
   ],
-  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
