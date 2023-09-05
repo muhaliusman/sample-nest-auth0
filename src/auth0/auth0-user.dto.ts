@@ -16,3 +16,8 @@ export class CreateAuth0UserDto {
   @IsString()
   user_id: string;
 }
+
+export class UpdateLastLoginDto {
+  @IsString()
+  user_id: string;
+}
