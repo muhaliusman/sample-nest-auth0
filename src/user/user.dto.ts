@@ -11,7 +11,7 @@ export class UpdateUserNameDto {
   name: string;
 }
 
-export class CreateAuth0UserDto {
+export class Auth0UserDto {
   @IsEmail()
   @ApiProperty({
     description: 'Auth0 email',
@@ -42,16 +42,13 @@ export class CreateAuth0UserDto {
   @IsOptional()
   picture?: string | null;
 
-  @ApiProperty({
-    description: 'Auth0 user_id',
-    required: true,
-    example: 'auth0|1234567890',
+  @ApiPropertyOptional({
+    description: 'Last login date',
+    example: '2021-01-01T00:00:00.000Z',
   })
-  @IsString()
-  user_id: string;
-}
+  @IsOptional()
+  last_login_at?: Date | null;
 
-export class UpdateLastLoginDto {
   @ApiProperty({
     description: 'Auth0 user_id',
     required: true,

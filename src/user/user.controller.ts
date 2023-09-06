@@ -13,11 +13,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserService } from './user.service';
-import {
-  CreateAuth0UserDto,
-  UpdateLastLoginDto,
-  UpdateUserNameDto,
-} from './user.dto';
+import { Auth0UserDto, UpdateUserNameDto } from './user.dto';
 import { User } from './user.entity';
 import {
   ApiBearerAuth,
@@ -63,15 +59,15 @@ export class UserController {
     return this.userService.updateName(id, request.name);
   }
 
-  @Post('sync-register')
+  @Post('sync-auth0')
   @ApiResponse({
     status: 200,
-    description: 'User registered from auth0',
+    description: 'Sync user from auth0',
     type: User,
   })
   @UseGuards(AuthGuard('jwt'))
   @UsePipes(new ValidationPipe())
-  async register(@Body() request: CreateAuth0UserDto): Promise<User> {
+  async syncAuth0User(@Body() request: Auth0UserDto): Promise<User> {
     try {
       const user = await this.userService.createOrUpdateUserFromAuth0(
         request.user_id,
@@ -79,32 +75,9 @@ export class UserController {
           name: request.name,
           email_verified: request.email_verified,
           picture: request.picture,
+          last_login_at: request.last_login_at,
         },
         request.email,
-      );
-
-      return user;
-    } catch (error) {
-      ResponseHelper.throwHttpException(
-        error,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Put('sync-last-login')
-  @ApiResponse({
-    status: 200,
-    description: 'User last login updated',
-    type: User,
-  })
-  @UseGuards(AuthGuard('jwt'))
-  @UsePipes(new ValidationPipe())
-  async updateLastLogin(@Body() requests: UpdateLastLoginDto): Promise<User> {
-    try {
-      const user = await this.userService.updateLastLogin(
-        requests.user_id,
-        new Date(),
       );
 
       return user;

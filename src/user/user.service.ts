@@ -18,7 +18,7 @@ export class UserService {
 
   async createOrUpdateUserFromAuth0(
     auth0UserId: string,
-    auth0User: Partial<Auth0User>,
+    auth0User: Partial<Auth0User> & { last_login_at?: Date },
     email?: string,
   ): Promise<User> {
     const conditions: { [key: string]: string }[] = [
@@ -45,6 +45,7 @@ export class UserService {
         name: name,
         email_verified: auth0User.email_verified,
         avatar: auth0User.picture ?? user.avatar,
+        last_login_at: auth0User.last_login_at ?? user.last_login_at,
       });
     }
 
@@ -54,23 +55,7 @@ export class UserService {
       auth0_id: auth0UserId,
       email_verified: auth0User.email_verified,
       avatar: auth0User.picture,
-    });
-  }
-
-  async updateLastLogin(userId: string, lastLoginAt: Date): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: {
-        auth0_id: userId,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return await this.userRepository.save({
-      ...user,
-      last_login_at: lastLoginAt,
+      last_login_at: auth0User.last_login_at,
     });
   }
 
