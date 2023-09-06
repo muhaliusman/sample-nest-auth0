@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CreateAuth0UserDto } from 'src/auth0/auth0-user.dto';
+import { Auth0User } from 'src/auth0/auth0.type';
+import { Auth0Service } from 'src/auth0/auth0.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    private readonly auth0Service: Auth0Service,
   ) {}
 
   async getUsers(): Promise<User[]> {
@@ -15,43 +17,50 @@ export class UserService {
   }
 
   async createOrUpdateUserFromAuth0(
-    userRequest: CreateAuth0UserDto,
+    auth0UserId: string,
+    auth0User: Partial<Auth0User>,
+    email?: string,
   ): Promise<User> {
+    const conditions: { [key: string]: string }[] = [
+      {
+        auth0_id: auth0UserId,
+      },
+    ];
+
+    if (email) {
+      conditions.push({
+        email: email,
+      });
+    }
+
     const user = await this.userRepository.findOne({
-      where: [
-        {
-          auth0_id: userRequest.user_id,
-        },
-        {
-          email: userRequest.email,
-        },
-      ],
+      where: conditions,
     });
 
-    const name = userRequest.name ?? userRequest.email;
+    const name = auth0User.name ?? auth0User.email;
 
     if (user) {
       return await this.userRepository.save({
         ...user,
         name: name,
-        email_verified: userRequest.email_verified,
-        avatar: userRequest.picture,
+        email_verified: auth0User.email_verified,
+        avatar: auth0User.picture,
       });
     }
 
     return await this.userRepository.save({
-      email: userRequest.email,
+      email: email,
       name: name,
-      auth0_id: userRequest.user_id,
-      email_verified: userRequest.email_verified,
-      avatar: userRequest.picture,
+      auth0_id: auth0UserId,
+      email_verified: auth0User.email_verified,
+      avatar: auth0User.picture,
     });
   }
 
-  async updateLastLogin(user_id: string, last_login_at: Date): Promise<User> {
+  async updateLastLogin(userId: string, lastLoginAt: Date): Promise<User> {
     const user = await this.userRepository.findOne({
       where: {
-        auth0_id: user_id,
+        auth0_id: userId,
       },
     });
 
@@ -61,7 +70,26 @@ export class UserService {
 
     return await this.userRepository.save({
       ...user,
-      last_login_at: last_login_at,
+      last_login_at: lastLoginAt,
+    });
+  }
+
+  async updateName(userId: string, name: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.auth0Service.updateUser(user.auth0_id, { name });
+
+    return await this.userRepository.save({
+      ...user,
+      name: name,
     });
   }
 }
