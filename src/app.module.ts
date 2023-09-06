@@ -9,13 +9,14 @@ import typeormConfig from './config/typeorm.config';
 import appConfig from './config/app.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
+import redisConfig from './config/redis.config';
 
 @Module({
   imports: [
     Auth0Module,
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [auth0Config, typeormConfig, appConfig],
+      load: [auth0Config, typeormConfig, appConfig, redisConfig],
     }),
     UserModule,
     TypeOrmModule.forRootAsync({
