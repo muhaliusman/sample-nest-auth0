@@ -37,14 +37,14 @@ export class UserService {
       where: conditions,
     });
 
-    const name = auth0User.name ?? auth0User.email;
+    const name = auth0User.name ?? email;
 
     if (user) {
       return await this.userRepository.save({
         ...user,
         name: name,
         email_verified: auth0User.email_verified,
-        avatar: auth0User.picture,
+        avatar: auth0User.picture ?? user.avatar,
       });
     }
 
