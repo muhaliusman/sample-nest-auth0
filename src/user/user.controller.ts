@@ -30,6 +30,7 @@ import { Request } from 'express';
 import { Auth0AccessTokenDecoded } from 'src/auth0/auth0.type';
 import { Auth0Service } from 'src/auth0/auth0.service';
 import { GeneralSuccessResponse } from 'src/helpers/response.type';
+import { EmailVerifiedGuard } from 'src/guards/email-verified.guard';
 
 @Controller('users')
 @ApiTags('Users')
@@ -75,7 +76,7 @@ export class UserController {
       },
     },
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EmailVerifiedGuard)
   @UsePipes(new ValidationPipe())
   async updateName(
     @Param('id') id: string,
@@ -135,7 +136,7 @@ export class UserController {
     description: 'Get user profile from access token',
     type: User,
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EmailVerifiedGuard)
   @UsePipes(new ValidationPipe())
   async getUserFromAccessToken(@Req() request: Request): Promise<User> | never {
     try {
@@ -177,7 +178,7 @@ export class UserController {
       },
     },
   })
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EmailVerifiedGuard)
   @UsePipes(new ValidationPipe())
   async updatePassword(
     @Param('id') id: string,

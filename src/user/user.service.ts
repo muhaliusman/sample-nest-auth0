@@ -28,6 +28,16 @@ export class UserService {
     return user;
   }
 
+  async getUserByAuth0Id(auth0Id: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: {
+        auth0_id: auth0Id,
+      },
+    });
+
+    return user;
+  }
+
   async createOrUpdateUserFromAuth0(
     auth0UserId: string,
     auth0User: Partial<Auth0User> & { last_login_at?: Date },
