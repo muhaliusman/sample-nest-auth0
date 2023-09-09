@@ -28,6 +28,7 @@ import redisConfig from './config/redis.config';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         isGlobal: true,
+        ttl: 1000,
         store: (): any =>
           redisStore({
             socket: {

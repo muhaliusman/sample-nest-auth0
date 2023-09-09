@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -13,11 +14,14 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { UserService } from './user.service';
-import { Auth0UserDto, UpdateUserNameDto } from './user.dto';
+import { Auth0UserDto, UpdatePasswordDto, UpdateUserNameDto } from './user.dto';
 import { User } from './user.entity';
 import {
+  ApiBadRequestResponse,
   ApiBearerAuth,
   ApiHeaders,
+  ApiInternalServerErrorResponse,
+  ApiOkResponse,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -25,6 +29,7 @@ import { ResponseHelper } from 'src/helpers/response.helper';
 import { Request } from 'express';
 import { Auth0AccessTokenDecoded } from 'src/auth0/auth0.type';
 import { Auth0Service } from 'src/auth0/auth0.service';
+import { GeneralSuccessResponse } from 'src/helpers/response.type';
 
 @Controller('users')
 @ApiTags('Users')
@@ -39,6 +44,16 @@ import { Auth0Service } from 'src/auth0/auth0.service';
     description: 'application/json',
   },
 ])
+@ApiInternalServerErrorResponse({
+  description: 'Internal server error',
+  schema: {
+    example: {
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'Internal server error',
+    },
+  },
+})
 export class UserController {
   constructor(
     private readonly userService: UserService,
@@ -46,17 +61,42 @@ export class UserController {
   ) {}
 
   @Put(':id/update-name')
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'User name updated',
     type: User,
   })
+  @ApiBadRequestResponse({
+    description: 'Bad request',
+    schema: {
+      example: {
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'You are not allowed to update this user',
+      },
+    },
+  })
   @UseGuards(AuthGuard('jwt'))
+  @UsePipes(new ValidationPipe())
   async updateName(
     @Param('id') id: string,
+    @Req() expressRequest: Request,
     @Body() request: UpdateUserNameDto,
-  ): Promise<User> {
-    return this.userService.updateName(id, request.name);
+  ): Promise<User> | never {
+    try {
+      const localUser = await this.userService.getUserById(id);
+      const tokenDecoded = expressRequest.user as Auth0AccessTokenDecoded;
+      if (!localUser || localUser.auth0_id !== tokenDecoded.sub) {
+        throw new BadRequestException(
+          'You are not allowed to update this user',
+        );
+      }
+      return await this.userService.updateName(id, request.name);
+    } catch (error) {
+      ResponseHelper.throwHttpException(
+        error,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('sync-auth0')
@@ -67,7 +107,7 @@ export class UserController {
   })
   @UseGuards(AuthGuard('jwt'))
   @UsePipes(new ValidationPipe())
-  async syncAuth0User(@Body() request: Auth0UserDto): Promise<User> {
+  async syncAuth0User(@Body() request: Auth0UserDto): Promise<User> | never {
     try {
       const user = await this.userService.createOrUpdateUserFromAuth0(
         request.user_id,
@@ -97,7 +137,7 @@ export class UserController {
   })
   @UseGuards(AuthGuard('jwt'))
   @UsePipes(new ValidationPipe())
-  async getUserFromAccessToken(@Req() request: Request): Promise<User> {
+  async getUserFromAccessToken(@Req() request: Request): Promise<User> | never {
     try {
       const tokenDecoded = request.user as Auth0AccessTokenDecoded;
       const auth0User = await this.auth0Service.getAuth0User(tokenDecoded.sub);
@@ -114,6 +154,46 @@ export class UserController {
       );
 
       return user;
+    } catch (error) {
+      ResponseHelper.throwHttpException(
+        error,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put(':id/update-password')
+  @ApiOkResponse({
+    description: `User's password updated`,
+    type: User,
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad request',
+    schema: {
+      example: {
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'You are not allowed to update this user',
+      },
+    },
+  })
+  @UseGuards(AuthGuard('jwt'))
+  @UsePipes(new ValidationPipe())
+  async updatePassword(
+    @Param('id') id: string,
+    @Req() expressRequest: Request,
+    @Body() request: UpdatePasswordDto,
+  ): Promise<GeneralSuccessResponse> | never {
+    try {
+      const localUser = await this.userService.getUserById(id);
+      const tokenDecoded = expressRequest.user as Auth0AccessTokenDecoded;
+      if (!localUser || localUser.auth0_id !== tokenDecoded.sub) {
+        throw new BadRequestException(
+          'You are not allowed to update this user',
+        );
+      }
+      await this.userService.updatePassword(id, request.password);
+      return ResponseHelper.generalSuccessResponse(`User's password updated`);
     } catch (error) {
       ResponseHelper.throwHttpException(
         error,

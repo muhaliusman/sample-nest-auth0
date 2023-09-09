@@ -1,5 +1,10 @@
 import { HttpService } from '@nestjs/axios';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GetTokenResponse, Auth0User } from './auth0.type';
 import { catchError, firstValueFrom } from 'rxjs';
@@ -26,9 +31,7 @@ export class Auth0Service {
       const key = `${clientId}-${clientSecret}-${audience}`;
 
       const value = await this.cacheManager.get<string>(key);
-      if (value) {
-        return value;
-      }
+      if (value) return value;
 
       const observer = this.httpService
         .post<GetTokenResponse>(
@@ -51,11 +54,9 @@ export class Auth0Service {
 
       const response = await firstValueFrom(observer);
 
-      await this.cacheManager.set(
-        key,
-        response.data.access_token,
-        response.data.expires_in,
-      );
+      await this.cacheManager.set(key, response.data.access_token, {
+        ttl: response.data.expires_in,
+      } as any);
 
       return response.data.access_token;
     } catch (error) {
@@ -107,6 +108,12 @@ export class Auth0Service {
       const accessToken = await this.getAccessToken();
       const url = `api/v2/users/${userId}`;
 
+      if (!this.canUpdateAuth0Data(userId)) {
+        throw new BadRequestException(
+          `Cannot update Auth0 data because user is not an database connection user (id: ${userId})`,
+        );
+      }
+
       const observer = this.httpService
         .patch<Auth0User>(url, data, {
           baseURL: this.configService.get<string>('auth0.issuer'),
@@ -131,5 +138,53 @@ export class Auth0Service {
 
       throw error;
     }
+  }
+
+  async updatePassword(userId: string, password: string): Promise<Auth0User> {
+    try {
+      const accessToken = await this.getAccessToken();
+      const url = `api/v2/users/${userId}`;
+
+      if (!this.canUpdateAuth0Data(userId)) {
+        throw new BadRequestException(
+          `Cannot update Auth0 data because user is not an database connection user (id: ${userId})`,
+        );
+      }
+
+      const observer = this.httpService
+        .patch<Auth0User>(
+          url,
+          {
+            password: password,
+            connection: 'Username-Password-Authentication',
+          },
+          {
+            baseURL: this.configService.get<string>('auth0.issuer'),
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          },
+        )
+        .pipe(
+          catchError((e: AxiosError) => {
+            throw e;
+          }),
+        );
+
+      const response = await firstValueFrom(observer);
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        `Error updating Auth0 user password: ${error.message}`,
+        error.stack,
+      );
+
+      throw error;
+    }
+  }
+
+  private canUpdateAuth0Data(id: string): boolean {
+    return id.startsWith('auth0|');
   }
 }

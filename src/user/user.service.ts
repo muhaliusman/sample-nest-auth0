@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,6 +7,8 @@ import { Auth0Service } from 'src/auth0/auth0.service';
 
 @Injectable()
 export class UserService {
+  protected readonly logger = new Logger(Auth0Service.name);
+
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly auth0Service: Auth0Service,
@@ -14,6 +16,16 @@ export class UserService {
 
   async getUsers(): Promise<User[]> {
     return await this.userRepository.find();
+  }
+
+  async getUserById(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: {
+        id: id,
+      },
+    });
+
+    return user;
   }
 
   async createOrUpdateUserFromAuth0(
@@ -43,6 +55,7 @@ export class UserService {
       return await this.userRepository.save({
         ...user,
         name: name,
+        email: email ?? user.email,
         email_verified: auth0User.email_verified,
         avatar: auth0User.picture ?? user.avatar,
         last_login_at: auth0User.last_login_at ?? user.last_login_at,
@@ -70,11 +83,38 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    await this.auth0Service.updateUser(user.auth0_id, { name });
+    try {
+      await this.auth0Service.updateUser(user.auth0_id, { name });
+    } catch (error) {
+      this.logger.log('Error updating user name in Auth0', error);
+    }
 
     return await this.userRepository.save({
       ...user,
       name: name,
     });
+  }
+
+  async updatePassword(
+    userId: string,
+    password: string,
+  ): Promise<boolean> | never {
+    try {
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      await this.auth0Service.updatePassword(user.auth0_id, password);
+      return true;
+    } catch (error) {
+      this.logger.log('Error updating user password in Auth0', error);
+      throw error;
+    }
   }
 }

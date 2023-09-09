@@ -1,7 +1,7 @@
 import { HttpException } from '@nestjs/common';
-
+import { GeneralSuccessResponse } from './response.type';
 export class ResponseHelper {
-  static throwHttpException(error: Error, statusCode: number) {
+  static throwHttpException(error: Error, statusCode: number): never {
     if (error instanceof HttpException) {
       throw error;
     }
@@ -13,5 +13,12 @@ export class ResponseHelper {
       },
       statusCode,
     );
+  }
+
+  static generalSuccessResponse(message: string): GeneralSuccessResponse {
+    return {
+      status: 'success',
+      message,
+    };
   }
 }
