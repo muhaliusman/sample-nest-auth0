@@ -25,13 +25,13 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ResponseHelper } from 'src/helpers/response.helper';
+import { ResponseHelper } from 'helpers/response.helper';
 import { Request } from 'express';
-import { Auth0AccessTokenDecoded } from 'src/auth0/auth0.type';
-import { Auth0Service } from 'src/auth0/auth0.service';
-import { GeneralSuccessResponse } from 'src/helpers/response.type';
-import { EmailVerifiedGuard } from 'src/guards/email-verified.guard';
-import { Auth0WhitelistGuard } from 'src/guards/auth0-whitelist.guard';
+import { Auth0AccessTokenDecoded } from 'auth0/auth0.type';
+import { Auth0Service } from 'auth0/auth0.service';
+import { GeneralSuccessResponse } from 'helpers/response.type';
+import { EmailVerifiedGuard } from 'guards/email-verified.guard';
+import { Auth0WhitelistGuard } from 'guards/auth0-whitelist.guard';
 
 @Controller('users')
 @ApiTags('Users')
@@ -104,7 +104,8 @@ export class UserController {
   @Post('sync-auth0')
   @ApiResponse({
     status: 200,
-    description: 'Sync user from auth0, only for whitelisted IP (check auth0 ipWhitelist documentation)',
+    description:
+      'Sync user from auth0, only for whitelisted IP (check auth0 ipWhitelist documentation)',
     type: User,
   })
   @UseGuards(AuthGuard('jwt'), Auth0WhitelistGuard)

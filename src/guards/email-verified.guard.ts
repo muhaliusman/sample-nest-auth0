@@ -4,8 +4,8 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { Auth0AccessTokenDecoded } from 'src/auth0/auth0.type';
-import { UserService } from 'src/user/user.service';
+import { Auth0AccessTokenDecoded } from 'auth0/auth0.type';
+import { UserService } from 'user/user.service';
 
 @Injectable()
 export class EmailVerifiedGuard implements CanActivate {

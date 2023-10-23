@@ -1,9 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { User } from './user.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Auth0User } from 'src/auth0/auth0.type';
-import { Auth0Service } from 'src/auth0/auth0.service';
+import { Auth0User } from 'auth0/auth0.type';
+import { Auth0Service } from 'auth0/auth0.service';
+import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
